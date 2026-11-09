@@ -37,6 +37,34 @@ O painel lateral mostra o status de cada fonte em tempo real.
 | **FUNCEME / COGERH**, Portal Hidrológico do Ceará | 144 açudes monitorados: volume (hm³ e %), capacidade, cota, sangria, vazão, rio e região hidrográfica | `/api/acudes` |
 | **CEMADEN**, pluviômetros | Cerca de 300 pluviômetros no CE, com chuva acumulada em 1, 3, 6, 12, 24, 48, 72 e 96 h | `/api/pluviometros` |
 
+### Fortaleza (modo urbano)
+
+Para abrir: botão **🏙️ Fortaleza** junto das mesorregiões, ou cartão no detalhe do município. Os bairros, as estações e os canais aparecem a partir do zoom 10.
+
+| Fonte | O que fornece | Como entra |
+|---|---|---|
+| **Observatório de Riscos Climáticos de Fortaleza** (IPPLAN/Prefeitura), [Painel de Calor](https://observatorio.fortaleza.ce.gov.br/riscos-climaticos/painel-de-calor) | Sensação térmica **UTCI** agora e máxima do dia nas 11 estações, nível do protocolo municipal de calor, histórico de 30 dias | Proxy `/api/fortaleza` |
+| **Observatório**, [Recursos hídricos](https://observatorio.fortaleza.ce.gov.br/riscos-climaticos/recursos-hidricos) | 235 canais e lagoas com a situação da limpeza (em dia, prazo vencido…) | Proxy `/api/fortaleza` |
+| **Dados abertos da Prefeitura** ([dados.fortaleza.ce.gov.br](https://dados.fortaleza.ce.gov.br)) | Malha dos 121 bairros (SEUMA, 2025), IDH por bairro e população por faixa etária (SDE, base 2010, CC BY-SA) | Arquivo estático `geo/fortaleza-bairros.geojson` |
+
+No modo Fortaleza você encontra:
+
+- **Nível de calor do dia**, pelas regras do protocolo municipal: o nível vale para a cidade quando pelo menos duas estações o atingem. Acompanha a tabela de critérios e uma orientação curta.
+- **Estações** com raio de 2 km colorido pelo nível, e popup com a evolução dos últimos 30 dias.
+- **Bairros coloridos** por: sensação agora, máxima do dia, IDH, % de idosos, população ou **vulnerabilidade ao calor**. Este último é um índice experimental do Atmos, não oficial: a média de exposição (UTCI máximo estimado), sensibilidade (crianças e idosos) e baixa capacidade adaptativa (1 − IDH).
+- **Histórico de 7, 15 ou 30 dias**, com gráfico e ranking das estações.
+- **Canais e lagoas** coloridos pela situação da limpeza, com a lista dos prazos vencidos há mais tempo.
+
+Observações:
+
+- A sensação por bairro é **estimada** por interpolação entre as estações.
+- Os canais e lagoas são publicados pelo Observatório num mapa esquemático. As coordenadas foram convertidas com a calibração do próprio Observatório e têm precisão de algumas centenas de metros: 209 de 234 caem no bairro declarado.
+- Para regerar os bairros (quando a Prefeitura publicar nova malha ou novos indicadores), rode:
+
+  ```bash
+  python scripts/preparar_fortaleza.py
+  ```
+
 ## Como o proxy funciona
 
 ```
@@ -92,7 +120,8 @@ Com Node e a Netlify CLI, a alternativa é `npx netlify dev`.
 - **Leituras das estações do INMET**: os dados horários observados exigem token, obtido por cadastro no INMET. Por isso o painel mostra os metadados das estações e a previsão para o ponto exato de cada uma.
 - **Pluviômetros do CEMADEN**: a fonte informa o município, mas não as coordenadas de cada aparelho. O mapa mostra o **maior acumulado por município**, e o detalhe do município lista cada pluviômetro.
 - **Portal Hidrológico**: os dados vêm de uma variável embutida na página (`dados_reservatorios`), não de uma API documentada. Se o portal mudar de formato, o coletor acusa erro e o painel marca a fonte como indisponível.
-- **Open-Meteo**: é gratuito para uso não comercial, com cerca de 10 mil chamadas por dia por IP. Cada atualização consulta os 184 municípios, a cada 30 min, e só com a aba visível.
+- **Open-Meteo**: é gratuito para uso não comercial, com limites de 600 chamadas por minuto e 10 mil por dia por IP. Cada atualização consulta os 184 municípios, o que conta como 184 chamadas. Por isso o resultado fica **guardado no navegador por 15 min**, e recarregar a página não gasta cota.
+- **Observatório de Fortaleza**: os dados vêm embutidos nas páginas públicas, não de uma API documentada. Se o site mudar de formato, o coletor acusa erro e o painel marca a fonte como indisponível. O painel cita o Observatório e aponta para ele como referência oficial.
 
 ## Recursos
 

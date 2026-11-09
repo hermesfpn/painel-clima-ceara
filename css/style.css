@@ -396,3 +396,71 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; bord
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ---------- Modo Fortaleza ---------- */
+.chips button.city { border-color: rgba(94, 234, 212, .45); color: var(--accent); }
+.chips button.city.on { background: var(--accent); color: #0b1020; }
+.nv { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; color: #0b1020; background: var(--nv); white-space: nowrap; }
+.fz-pill {
+  display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px 0 10px; border-radius: 13px; width: max-content;
+  background: rgba(11, 16, 32, .9); border: 2px solid var(--nv); box-shadow: 0 3px 12px rgba(0,0,0,.55); transition: transform .2s;
+}
+.fz-pill:hover { transform: scale(1.12); }
+.fz-pill b { color: var(--c); font: 800 13px/1 Inter, sans-serif; }
+.fz-pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--nv); box-shadow: 0 0 8px var(--nv); animation: ping-dot 1.4s infinite alternate; }
+.fz-pp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+.fz-pp-grid > div { background: rgba(255,255,255,.04); border-radius: 9px; padding: 7px 8px; display: grid; gap: 3px; justify-items: start; }
+.fz-pp-grid small { color: var(--muted); font-size: 10.5px; }
+.fz-pp-grid b { font-size: 17px; }
+.spark { width: 100%; height: 54px; display: block; margin-top: 4px; }
+.spark polyline { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.spark .mx { stroke: #f6824a; } .spark .md { stroke: #8fdcaa; }
+.spark .ref { stroke: rgba(250,204,21,.7); stroke-dasharray: 4 3; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.spark-leg { display: flex; gap: 8px; flex-wrap: wrap; font-size: 10px; color: var(--muted); margin-top: 3px; align-items: center; }
+.spark-leg i { display: inline-block; width: 10px; height: 2px; margin-right: -4px; }
+.spark-leg i.mx { background: #f6824a; } .spark-leg i.md { background: #8fdcaa; } .spark-leg i.ref { background: #facc15; }
+.bz-t { width: 100%; font-size: 11.5px; border-collapse: collapse; margin: 4px 0 6px; }
+.bz-t td { padding: 2px 0; } .bz-t td:last-child { text-align: right; width: 36px; color: var(--muted); }
+.mini-bar { display: inline-block; width: 100%; min-width: 60px; height: 6px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; vertical-align: middle; }
+.mini-bar i { display: block; height: 100%; border-radius: 4px; }
+.vuln { display: grid; grid-template-columns: 1fr 40px; gap: 4px 8px; align-items: center; margin: 6px 0; padding: 8px; border-radius: 9px; background: rgba(255,255,255,.04); }
+.vuln > small:first-child, .vuln .muted { grid-column: 1 / -1; }
+.vuln b { text-align: right; }
+.fz-cta {
+  width: 100%; text-align: left; margin-top: 16px; padding: 12px 14px; border-radius: 12px; cursor: pointer; display: grid; gap: 3px;
+  border: 1px solid rgba(94, 234, 212, .4); border-left: 4px solid var(--nv); background: linear-gradient(135deg, rgba(94,234,212,.12), rgba(165,180,252,.08));
+}
+.fz-cta span { font-weight: 700; font-size: 14px; }
+.fz-cta small { color: var(--muted); font-size: 11.5px; }
+.fz-cta:hover { background: linear-gradient(135deg, rgba(94,234,212,.2), rgba(165,180,252,.14)); }
+.fz-nivel { margin-top: 16px; padding: 14px; border-radius: 14px; border: 1px solid var(--line); border-left: 5px solid var(--nv);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--nv) 18%, transparent), rgba(255,255,255,.02)); display: grid; gap: 6px; }
+.fz-nivel > small { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.fz-nivel strong { font-size: 26px; font-weight: 800; color: var(--nv); line-height: 1.1; }
+.fz-nivel p { margin: 0; font-size: 12.5px; line-height: 1.5; }
+.fz-nivel-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fz-nivel-row > div { display: grid; gap: 4px; justify-items: start; background: rgba(11,16,32,.35); padding: 8px; border-radius: 9px; font-size: 12px; }
+.fz-nivel-row small { color: var(--muted); font-size: 10.5px; }
+.fz-crit { margin-top: 10px; font-size: 12px; }
+.fz-crit summary { cursor: pointer; color: var(--muted); }
+.fz-crit table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11.5px; }
+.fz-crit th { text-align: left; color: var(--faint); font-weight: 500; padding: 4px; border-bottom: 1px solid var(--line); }
+.fz-crit td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
+.fz-crit p { margin-top: 8px; }
+.fz-vars button, .fz-jan button { padding: 4px 10px; font-size: 11.5px; }
+.fz-list { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.fz-list button {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; text-align: left; border: 0; background: transparent;
+  padding: 7px 8px; border-radius: 9px; font-size: 12.5px; font-variant-numeric: tabular-nums;
+}
+.fz-list button:hover { background: rgba(255,255,255,.06); }
+.fz-list button span small { display: block; color: var(--faint); font-size: 10.5px; }
+.fz-list button .mini-bar { width: 80px; }
+.fz-rank { list-style: none; margin: 10px 0 4px; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; font-size: 12px; }
+.fz-rank li { display: grid; grid-template-columns: 16px 1fr auto; gap: 6px; align-items: baseline; padding: 3px 0; }
+.fz-rank li small { grid-column: 2 / -1; color: var(--faint); font-size: 10px; margin-top: -3px; }
+.fz-rank .n { color: var(--faint); font-size: 10.5px; }
+.stack { display: flex; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 4px; }
+.stack-leg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; color: var(--muted); margin: 8px 0; }
+.stack-leg i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+.fz-grupos { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--muted); line-height: 1.7; }

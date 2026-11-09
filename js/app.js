@@ -119,18 +119,23 @@
   // ------------------------------------------------------------ Estado
   const state = {
     v: 'temp', hour: 0, playing: false, ready: false, selected: null, meso: null, updatedAt: null, rel: false,
-    layers: { choro: true, wind: true, acudes: true, stations: true, fires: true, alerts: true, coast: true, radar: false },
+    layers: { choro: true, wind: true, acudes: true, stations: true, fires: true, alerts: true, coast: true, radar: false, fBairros: true, fCalor: true, fAgua: true },
     janela: '24h',
   };
   let MUNS = [], STATE_POLYS = [], STATE_BBOX = null;
   const BYCODE = new Map();
   let STATIONS = [], FIRES = [], ALERTS = [], ACUDES = [], PLUV = [];
+  // Pontos de extensão para módulos opcionais (js/fortaleza.js)
+  const HOOKS = { refresh: [], detail: [], mesos: [] };
+  const EXTRA_GROUPS = {};
   const ALERT_BY_MUN = new Map(), FIRE_BY_MUN = new Map();
 
   const SOURCES = {
     ibge: { org: 'IBGE', what: 'Malha e municípios', href: 'https://servicodados.ibge.gov.br/api/docs' },
     meteo: { org: 'Open-Meteo', what: 'Previsão por município', href: 'https://open-meteo.com' },
     acudes: { org: 'FUNCEME / COGERH', what: 'Volume dos açudes (via proxy)', href: 'http://www.hidro.ce.gov.br' },
+    fortaleza: { org: 'Observatório de Fortaleza', what: 'Calor UTCI, canais e lagoas (via proxy)', href: 'https://observatorio.fortaleza.ce.gov.br/riscos-climaticos/painel-de-calor' },
+    bairros: { org: 'Prefeitura de Fortaleza', what: 'Bairros, IDH e população (dados abertos)', href: 'https://dados.fortaleza.ce.gov.br' },
     pluv: { org: 'CEMADEN', what: 'Pluviômetros (via proxy)', href: 'https://www.gov.br/cemaden' },
     inmetEst: { org: 'INMET', what: 'Estações meteorológicas', href: 'https://portal.inmet.gov.br' },
     inmetAv: { org: 'INMET', what: 'Avisos meteorológicos', href: 'https://alertas2.inmet.gov.br' },
@@ -286,10 +291,33 @@
       timezone: TZ, forecast_days: '3', ...extra,
     });
   }
-  async function loadMeteo() {
+  // A previsão dos 184 municípios conta como 184 chamadas na cota gratuita da Open-Meteo.
+  // Guardar o resultado por 15 min no navegador evita gastar a cota a cada recarga da página.
+  const CACHE_METEO = 'atmos-meteo-v1', CACHE_MS = 15 * 60 * 1000;
+  function lerCacheMeteo(chave) {
+    try {
+      const c = JSON.parse(localStorage.getItem(CACHE_METEO) || 'null');
+      if (c && c.chave === chave && Date.now() - c.t < CACHE_MS && c.muns.length === MUNS.length) return c;
+    } catch { /* armazenamento indisponível */ }
+    return null;
+  }
+  function gravarCacheMeteo(chave) {
+    try {
+      localStorage.setItem(CACHE_METEO, JSON.stringify({ chave, t: Date.now(), muns: MUNS.map((m) => ({ c: m.c, h: m.h })) }));
+    } catch { /* cota cheia ou armazenamento bloqueado: segue sem cache */ }
+  }
+  async function loadMeteo(forcar = false) {
     setSource('meteo', 'loading');
     const keys = Object.entries(VARS).filter(([, v]) => v.src === 'meteo');
     const hourly = [...new Set([...keys.map(([, v]) => v.hourly), 'wind_direction_10m', 'weather_code'])];
+    const chave = hourly.join(',');
+    const cache = !forcar && lerCacheMeteo(chave);
+    if (cache) {
+      cache.muns.forEach((x, i) => { MUNS[i].c = x.c; MUNS[i].h = x.h; });
+      state.updatedAt = new Date(cache.t);
+      setSource('meteo', 'ok', `${MUNS.length} pontos · ${hhmm(state.updatedAt)} (cache local)`);
+      return;
+    }
     let data = await j(`${URLS.meteo}?${multiParams({
       current: 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,is_day',
       hourly: hourly.join(','),
@@ -305,6 +333,7 @@
       for (const [k, v] of keys) m.h[k] = sl(H[v.hourly]);
     });
     state.updatedAt = new Date();
+    gravarCacheMeteo(chave);
     setSource('meteo', 'ok', `${data.length} pontos · ${hhmm(state.updatedAt)}`);
   }
   let aqPromise = null;
@@ -748,6 +777,9 @@
     ['fires', 'Focos de queimadas', 'INPE · 48 h'],
     ['coast', 'Ondas no litoral', 'Open-Meteo Marine'],
     ['radar', 'Radar de chuva', 'RainViewer'],
+    ['fBairros', 'Fortaleza · bairros', 'Prefeitura · IDH e população · zoom ≥ 10'],
+    ['fCalor', 'Fortaleza · calor (UTCI)', 'Observatório · proxy · zoom ≥ 10'],
+    ['fAgua', 'Fortaleza · canais e lagoas', 'Observatório · proxy · zoom ≥ 10'],
   ];
   $('#layers').innerHTML = LAYERS.map(([k, label, src]) =>
     `<label class="tg" data-layer="${k}"><input type="checkbox" ${state.layers[k] ? 'checked' : ''}><span></span><div>${label}<small>${src}</small></div></label>`).join('');
@@ -759,8 +791,10 @@
     state.layers[k] = on;
     const cb = document.querySelector(`[data-layer=${k}] input`);
     if (cb) cb.checked = on;
-    const groups = { stations: stationLayer, fires: fireLayer, alerts: alertLayer, coast: coastLayer, acudes: acudeLayer };
-    if (groups[k]) on ? groups[k].addTo(map) : groups[k].remove();
+    const groups = { stations: stationLayer, fires: fireLayer, alerts: alertLayer, coast: coastLayer, acudes: acudeLayer, ...EXTRA_GROUPS };
+    const g = groups[k];
+    if (typeof g === 'function') g(on); // camadas de módulos (ex.: js/fortaleza.js) controlam a própria visibilidade
+    else if (g) on ? g.addTo(map) : g.remove();
     if (k === 'wind' && !on) wctx.clearRect(0, 0, windCanvas.width, windCanvas.height);
     if (k === 'choro' || k === 'radar') restyle();
     if (k === 'radar') on ? startRadar() : stopRadar();
@@ -770,9 +804,10 @@
     const mesos = [...new Set(MUNS.map((m) => m.meso))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
     $('#mesos').innerHTML = [`<button data-m="" class="${!state.meso ? 'on' : ''}">Todo o Ceará</button>`,
       ...mesos.map((m) => `<button data-m="${esc(m)}" class="${state.meso === m ? 'on' : ''}">${esc(m.replace(' Cearense', '').replace('Metropolitana de ', 'RM '))}</button>`)].join('');
+    HOOKS.mesos.forEach((fn) => fn($('#mesos')));
   }
   $('#mesos').addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b) return;
+    const b = e.target.closest('button'); if (!b || b.dataset.m === undefined) return;
     state.meso = b.dataset.m || null;
     renderMesos(); restyle(); renderRanking(); renderKpis();
     if (!state.meso) return map.flyToBounds(BOUNDS, { ...fitPad(), duration: 1 });
@@ -1022,6 +1057,7 @@
       <h3>7 dias · modelo <span>mín · máx · chuva (mm)</span></h3>
       <div class="days">${days}</div>
       ${mun ? `<h3>Previsão oficial do INMET <span>${esc(mun.name)}</span></h3><div id="inmetPrev" class="prev"><div class="skeleton" style="height:120px"></div></div>` : ''}
+      <div class="d-hook"></div>
       <h3>Chuva medida <span>CEMADEN · mm</span></h3>
       ${pluvHtml}
       <h3>${acHere.length ? 'Açudes no município' : 'Açude monitorado mais próximo'} <span>FUNCEME / COGERH</span></h3>
@@ -1037,6 +1073,7 @@
     panel.querySelectorAll('[data-ac]').forEach((el) => el.addEventListener('click', () => {
       focusAcude(ACUDES.find((x) => String(x.id) === el.dataset.ac));
     }));
+    HOOKS.detail.forEach((fn) => fn(panel.querySelector('.d-hook'), place, mun));
     drawChart(hours, temps, pps);
   }
 
@@ -1157,7 +1194,7 @@
     const btn = $('#refresh');
     btn.classList.add('spin');
     try {
-      await loadMeteo();
+      await loadMeteo(manual);
       if (aqPromise) { aqPromise = null; await ensureAQ().catch(() => {}); }
       state.ready = true;
       $('#live').className = 'live on';
@@ -1178,12 +1215,36 @@
     guarded('inpe', loadFires);
     guarded('pluv', loadPluv);
     guarded('acudes', loadAcudes);
+    HOOKS.refresh.forEach(([key, fn]) => guarded(key, fn));
   }
   $('#refresh').addEventListener('click', () => refresh(true));
   setInterval(() => { if (!document.hidden) refresh(); }, REFRESH_MS);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && state.updatedAt && Date.now() - state.updatedAt > REFRESH_MS) refresh();
   });
+
+  /** Abre a gaveta de detalhes com conteúdo próprio de um módulo. */
+  function openCustomPanel(render) {
+    detailReq++;
+    state.selected = null;
+    if (pin) { pin.remove(); pin = null; }
+    $('#side').classList.remove('open');
+    const panel = $('#detail');
+    panel.classList.add('open');
+    panel.setAttribute('aria-hidden', 'false');
+    panel.scrollTop = 0;
+    render(panel);
+    panel.querySelector('.d-close')?.addEventListener('click', closeDetail);
+    restyle(); renderRanking(); saveHash();
+  }
+
+  // API para módulos opcionais carregados depois deste arquivo (ex.: js/fortaleza.js)
+  window.ATMOS = {
+    map, state, TZ, HOOKS, EXTRA_GROUPS, SOURCES,
+    j, esc, clamp, norm, km, toast, hhmm, idade, inPolys, inBox, bboxOf, polysOf, labelPoint,
+    fitPad, setSource, viaProxy, toggleLayer, openDetail, openCustomPanel, closeDetail,
+    getMun: (code) => BYCODE.get(code),
+  };
 
   // ------------------------------------------------------------ Início
   async function boot() {
