@@ -1,0 +1,40 @@
+name: Publicar no GitHub Pages
+
+# Publica o site e, a cada 30 minutos, coleta os dados de açudes (FUNCEME/COGERH)
+# e pluviômetros (CEMADEN) em data/*.json — o "proxy" para quem hospeda só no GitHub.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Coletar açudes e pluviômetros
+        run: node scripts/coletar.mjs
+        continue-on-error: true
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4

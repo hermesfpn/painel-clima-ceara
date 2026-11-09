@@ -1,0 +1,5 @@
+# Gerado pelo GitHub Actions (scripts/coletar.mjs) a cada publicação
+data/
+__pycache__/
+.netlify/
+node_modules/
