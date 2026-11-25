@@ -143,14 +143,26 @@ def caminho_svg(d):
     return [r for r in aneis if len(r) >= 2]
 
 
+MINUSCULAS = {"de", "do", "da", "dos", "das", "e"}
+
+
+def nome_estacao(nome):
+    """'DCFOR - CJ ESPERANÇA' -> 'Conjunto Esperança' (mesma regra de nomeEstacao em fontes.mjs)."""
+    s = re.sub(r"^.*DEFESA CIVIL\s*-\s*", "", str(nome or ""), flags=re.I)
+    s = re.sub(r"^PF\s*/\s*", "", re.sub(r"^DCFOR\s*-\s*", "", s, flags=re.I), flags=re.I).strip()
+    if s and s == s.upper():
+        s = " ".join(w if i and w in MINUSCULAS else w[:1].upper() + w[1:] for i, w in enumerate(s.lower().split()))
+    return re.sub(r"^Cj ", "Conjunto ", s)
+
+
 def fortaleza(html_calor, html_hidricos):
     vistas = json.loads(html.unescape(re.search(r'data-vistas="([^"]*)"', html_calor).group(1)))
     por_id = {}
     for e in vistas.get("agora") or []:
-        por_id[e["id"]] = {"id": e["id"], "nome": e["nome"], "lat": num(e.get("lat")), "lon": num(e.get("lon")),
+        por_id[e["id"]] = {"id": e["id"], "nome": nome_estacao(e["nome"]), "lat": num(e.get("lat")), "lon": num(e.get("lon")),
                            "agora": {"utci": num(e.get("sensacao")), "nivel": e.get("nivel")}}
     for e in vistas.get("registrada") or []:
-        s = por_id.get(e["id"]) or {"id": e["id"], "nome": e["nome"], "lat": num(e.get("lat")), "lon": num(e.get("lon")), "agora": None}
+        s = por_id.get(e["id"]) or {"id": e["id"], "nome": nome_estacao(e["nome"]), "lat": num(e.get("lat")), "lon": num(e.get("lon")), "agora": None}
         hora = re.search(r"(\d{1,2}:\d{2})", e.get("rotulo") or "")
         s["maxDia"] = {"utci": num(e.get("sensacao")), "nivel": e.get("nivel"), "hora": hora.group(1) if hora else None}
         por_id[e["id"]] = s
@@ -159,7 +171,7 @@ def fortaleza(html_calor, html_hidricos):
     historico = None
     if analise:
         historico = {"datas": analise["datas"][-30:], "estacoes": [
-            {"id": e["id"], "nome": e["nome"], "media": e["media"][-30:], "maxima": e["maxima"][-30:]} for e in analise["estacoes"]]}
+            {"id": e["id"], "nome": nome_estacao(e["nome"]), "media": e["media"][-30:], "maxima": e["maxima"][-30:]} for e in analise["estacoes"]]}
     hidricos = None
     if html_hidricos:
         scripts = [s.group(1).strip() for s in re.finditer(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", html_hidricos, re.S | re.I)]

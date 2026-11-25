@@ -1,7 +1,9 @@
 name: Publicar no GitHub Pages
 
-# Publica o site e, a cada 30 minutos, coleta os dados de açudes (FUNCEME/COGERH)
-# e pluviômetros (CEMADEN) em data/*.json — o "proxy" para quem hospeda só no GitHub.
+# Publica o site e coleta os dados de açudes (FUNCEME/COGERH), pluviômetros (CEMADEN)
+# e do Observatório de Fortaleza em data/*.json — o "proxy" para quem hospeda só no GitHub.
+# Observação: o GitHub não garante o horário de agendamentos gratuitos; na prática eles
+# rodam bem menos que a cada 30 min (ver README, "Frequência real da coleta").
 on:
   push:
     branches: [main]
@@ -23,18 +25,29 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment-retry.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - name: Coletar açudes e pluviômetros
+      - name: Coletar açudes, pluviômetros e Observatório de Fortaleza
         run: node scripts/coletar.mjs
         continue-on-error: true
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: .
+
+      # A publicação às vezes falha por instabilidade momentânea da API do GitHub
+      # ("Fetching artifact metadata failed"). Em vez de esperar o próximo agendamento,
+      # aguarda um pouco e tenta de novo uma vez.
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+      - name: Aguardar antes de tentar de novo
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 60
+      - id: deployment-retry
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v5

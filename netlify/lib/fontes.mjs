@@ -146,6 +146,17 @@ export function caminhoSvg(d) {
   return aneis.filter((r) => r.length >= 2);
 }
 
+/** "DCFOR - CJ ESPERANÇA" -> "Conjunto Esperança"; nomes já formatados passam sem mudança. */
+const MINUSCULAS = new Set(['de', 'do', 'da', 'dos', 'das', 'e']);
+export function nomeEstacao(nome) {
+  let s = String(nome || '').replace(/^.*DEFESA CIVIL\s*-\s*/i, '').replace(/^DCFOR\s*-\s*/i, '').replace(/^PF\s*\/\s*/i, '').trim();
+  if (s && s === s.toUpperCase()) {
+    s = s.toLowerCase().replace(/\s+/g, ' ').split(' ')
+      .map((w, i) => (i && MINUSCULAS.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1))).join(' ');
+  }
+  return s.replace(/^Cj /, 'Conjunto ');
+}
+
 /** Calor (UTCI) nas estações, histórico de 30 dias e manutenção de canais e lagoas. */
 export function normalizarFortaleza(htmlCalor, htmlHidricos) {
   const mv = /data-vistas="([^"]*)"/.exec(htmlCalor);
@@ -153,10 +164,10 @@ export function normalizarFortaleza(htmlCalor, htmlHidricos) {
   const vistas = JSON.parse(desescapar(mv[1]));
   const porId = new Map();
   for (const e of vistas.agora || []) {
-    porId.set(e.id, { id: e.id, nome: e.nome, lat: num(e.lat), lon: num(e.lon), agora: { utci: num(e.sensacao), nivel: e.nivel ?? null } });
+    porId.set(e.id, { id: e.id, nome: nomeEstacao(e.nome), lat: num(e.lat), lon: num(e.lon), agora: { utci: num(e.sensacao), nivel: e.nivel ?? null } });
   }
   for (const e of vistas.registrada || []) {
-    const s = porId.get(e.id) || { id: e.id, nome: e.nome, lat: num(e.lat), lon: num(e.lon), agora: null };
+    const s = porId.get(e.id) || { id: e.id, nome: nomeEstacao(e.nome), lat: num(e.lat), lon: num(e.lon), agora: null };
     const hora = /(\d{1,2}:\d{2})/.exec(e.rotulo || '');
     s.maxDia = { utci: num(e.sensacao), nivel: e.nivel ?? null, hora: hora ? hora[1] : null };
     porId.set(e.id, s);
@@ -166,7 +177,7 @@ export function normalizarFortaleza(htmlCalor, htmlHidricos) {
   const N = 30;
   const historico = analise ? {
     datas: analise.datas.slice(-N),
-    estacoes: analise.estacoes.map((e) => ({ id: e.id, nome: e.nome, media: e.media.slice(-N), maxima: e.maxima.slice(-N) })),
+    estacoes: analise.estacoes.map((e) => ({ id: e.id, nome: nomeEstacao(e.nome), media: e.media.slice(-N), maxima: e.maxima.slice(-N) })),
   } : null;
 
   let hidricos = null;

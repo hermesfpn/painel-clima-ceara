@@ -43,7 +43,7 @@ Para abrir: botão **🏙️ Fortaleza** junto das mesorregiões, ou cartão no 
 
 | Fonte | O que fornece | Como entra |
 |---|---|---|
-| **Observatório de Riscos Climáticos de Fortaleza** (IPPLAN/Prefeitura), [Painel de Calor](https://observatorio.fortaleza.ce.gov.br/riscos-climaticos/painel-de-calor) | Sensação térmica **UTCI** agora e máxima do dia nas 11 estações, nível do protocolo municipal de calor, histórico de 30 dias | Proxy `/api/fortaleza` |
+| **Observatório de Riscos Climáticos de Fortaleza** (IPPLAN/Prefeitura), [Painel de Calor](https://observatorio.fortaleza.ce.gov.br/riscos-climaticos/painel-de-calor) | Sensação térmica **UTCI** agora e máxima do dia nas estações da Defesa Civil (19 em nov/2026), nível do protocolo municipal de calor, histórico de 30 dias | Proxy `/api/fortaleza` |
 | **Observatório**, [Recursos hídricos](https://observatorio.fortaleza.ce.gov.br/riscos-climaticos/recursos-hidricos) | 235 canais e lagoas com a situação da limpeza (em dia, prazo vencido…) | Proxy `/api/fortaleza` |
 | **Dados abertos da Prefeitura** ([dados.fortaleza.ce.gov.br](https://dados.fortaleza.ce.gov.br)) | Malha dos 121 bairros (SEUMA, 2025), IDH por bairro e população por faixa etária (SDE, base 2010, CC BY-SA) | Arquivo estático `geo/fortaleza-bairros.geojson` |
 
@@ -81,7 +81,7 @@ scripts/
 O navegador tenta as bases definidas em `PROXY`, no arquivo `js/config.js`, nesta ordem:
 
 1. **`api/`**: Netlify Functions. As respostas ficam **15 min em cache na CDN**, então todos os visitantes compartilham a mesma consulta e os servidores do governo não são sobrecarregados.
-2. **`data/`**: arquivos JSON gerados pelo GitHub Actions a cada 30 min, para quem hospeda só no GitHub Pages.
+2. **`data/`**: arquivos JSON gerados pelo GitHub Actions, para quem hospeda só no GitHub Pages (veja a frequência real abaixo).
 
 Para usar um proxy hospedado em outro lugar (por exemplo, site no GitHub Pages e proxy na Netlify), coloque a URL completa no início da lista: `PROXY: ['https://seusite.netlify.app/api/', 'api/', 'data/']`.
 
@@ -111,7 +111,16 @@ Com Node e a Netlify CLI, a alternativa é `npx netlify dev`.
 
 1. Envie esta pasta para a branch `main` de um repositório.
 2. Em *Settings → Pages → Build and deployment*, escolha **GitHub Actions**.
-3. O workflow `.github/workflows/pages.yml` coleta os açudes e os pluviômetros e publica o site **a cada push e a cada 30 minutos**.
+3. O workflow `.github/workflows/pages.yml` coleta os açudes, os pluviômetros e o Observatório de Fortaleza e publica o site **a cada push e pelo agendamento**.
+
+#### Frequência real da coleta no GitHub Pages
+
+O workflow pede uma execução a cada 30 min, mas o GitHub **não garante** o horário de agendamentos gratuitos e os atrasa quando há muita demanda. Neste repositório, em novembro de 2026, as coletas agendadas aconteceram em média **a cada 7 h** (entre 4 h e 12 h). O painel mostra a idade de cada fonte na lista "Fontes de dados".
+
+- A previsão do tempo, o INMET, o INPE e o radar **não são afetados**, porque o navegador do visitante os consulta na hora.
+- Os afetados são os açudes, os pluviômetros e o Observatório de Fortaleza. Para tê-los sempre recentes, publique também na **Netlify**: lá as funções respondem na hora, com cache de 15 min. Você pode manter o site no GitHub Pages e apontar o proxy para a Netlify em `js/config.js` (`PROXY: ['https://seusite.netlify.app/api/', 'data/']`).
+- Para forçar uma coleta, use *Actions → Publicar no GitHub Pages → Run workflow*.
+- Se a publicação falhar por instabilidade do GitHub ("Fetching artifact metadata failed"), o workflow espera 1 min e tenta de novo uma vez.
 
 > O GitHub pode atrasar execuções agendadas em horários de pico e pausa os agendamentos em repositórios sem atividade por 60 dias.
 

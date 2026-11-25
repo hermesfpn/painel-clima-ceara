@@ -1,7 +1,7 @@
 /* Atmos Ceará — modo Fortaleza
  * Inspirado no Painel de Calor do Observatório de Riscos Climáticos de Fortaleza (IPPLAN/Prefeitura).
  * Fontes:
- *   - Observatório (via proxy /api/fortaleza): sensação térmica UTCI e níveis de calor nas 11 estações,
+ *   - Observatório (via proxy /api/fortaleza): sensação térmica UTCI e níveis de calor nas estações da Defesa Civil,
  *     histórico de 30 dias e situação de limpeza de canais e lagoas.
  *   - Dados abertos da Prefeitura (geo/fortaleza-bairros.geojson, gerado por scripts/preparar_fortaleza.py):
  *     malha de bairros 2025, IDH e população por bairro (Censo 2010).
@@ -359,7 +359,7 @@
         <h3>Grupos prioritários no calor</h3>
         <ul class="fz-grupos">${GRUPOS.map((g) => `<li>${g}</li>`).join('')}</ul>
 
-        <p class="d-src">Calor, histórico e canais/lagoas: <a href="${OBS_URL}" target="_blank" rel="noopener">Observatório de Riscos Climáticos de Fortaleza</a> (IPPLAN/Prefeitura), coletados automaticamente a cada 30 min. Para decisões oficiais, consulte o painel do Observatório e a Defesa Civil.
+        <p class="d-src">Calor, histórico e canais/lagoas: <a href="${OBS_URL}" target="_blank" rel="noopener">Observatório de Riscos Climáticos de Fortaleza</a> (IPPLAN/Prefeitura), coletados automaticamente (veja a idade na lista de fontes). Para decisões oficiais, consulte o painel do Observatório e a Defesa Civil.
         Bairros, IDH e população: <a href="https://dados.fortaleza.ce.gov.br" target="_blank" rel="noopener">dados abertos da Prefeitura de Fortaleza</a> (SEUMA, SDE · CC BY-SA).</p>`;
 
       panel.querySelector('.d-close').addEventListener('click', () => { F.aberto = false; renderChip(); });
